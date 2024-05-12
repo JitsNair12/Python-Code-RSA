@@ -1,0 +1,375 @@
+# RSA algorithm
+import math
+import random
+import time
+
+# Function to compute square and multiply 
+def square_and_multiply(base, exponent, modulus):
+    result = 1
+    base = base % modulus
+    while exponent > 0:
+        # If the current exponent bit is 1, multiply result by base
+        if exponent % 2 == 1:
+            result = (result * base) % modulus
+        # Square the base and reduce modulo m
+        base = (base * base) % modulus
+        # Shift right the exponent (integer division by 2)
+        exponent //= 2 
+    return result
+
+# Step 1 User inputs two numbers p and q
+# Step 2 Check if the two numbers p and q are prime 
+def textbookRSA():
+        while True:
+            p = int(input('Enter a prime number p: '))
+            if p > 1:
+                # Iterate from 2 to p // 2
+                for i in range(2, (p // 2) + 1):
+                    # If p is divisible by any number between 2 and n / 2, it is not prime
+                    if (p % i) == 0:
+                        print(p, "is not a prime number")
+                        break
+                else:
+                    print(p, "is a prime number")
+                    break  # Break out of the while loop if it's prime
+            else:
+                print(p, "is not a prime number. Please enter a number greater than 1.")
+
+        while True:
+            q = int(input('Enter a prime number q: '))
+            if q > 1:
+                # Iterate from 2 to q // 2
+                for i in range(2, (q // 2) + 1):
+                    # If q is divisible by any number between 2 and n / 2, it is not prime
+                    if (q % i) == 0:
+                        print(q, "is not a prime number")
+                        break
+                else:
+                    print(q, "is a prime number")
+                    break  # Break out of the while loop if it's prime
+            else:
+                print(q, "is not a prime number. Please enter a number greater than 1.")
+
+        # Step 2 Compute the value of n
+        n = p * q
+        print("n =", n)
+
+        # Step 3 Compute the value of phi(n)
+        phi = (p - 1) * (q - 1)
+        print("phi =", phi)
+
+        # Step 4 Choose a value of e such that 1<e<phi(n) and gcd(phi(n), e) = 1
+
+        e = (int(input('Enter a prime number e: ')))
+        while e < phi:
+            if math.gcd(e, phi) == 1:
+                break
+            else:
+                e += 1
+        print("e =", e)
+
+        # Step 5 Calculate d such that d = (e^-1) mod phi(n)
+        for k in range(-1, -1000, -1):
+            temp = -(k * phi) + 1
+            d = temp / e
+            rem = temp % e
+
+            if rem == 0:
+                print('k =', k)
+                print('d =', d)
+                break
+        else:
+            print("none")
+
+        # Print Public Key
+        print(f'Public key: {e, n}')
+
+        # Print Private Key
+        print(f'Private key: {d, n}')
+
+        # Input and Display Plain text
+        while True:
+            try:
+                msg = int(input('Enter a message: '))
+                print(f'The original message is: {msg}')
+                break
+            except ValueError:
+                print('Invalid input. Please enter an integer.')
+
+        # Compute encrypted message
+        C = square_and_multiply(msg, e, n)
+        print(f'The encrypted message is: {C}')
+
+        # Compute decrypted message 
+        M = square_and_multiply(C, d, n)
+        print(f'The decrypted message is: {M}')
+
+def rand():
+    return random.randint(0, 2147483647)
+
+calcul = [0 for i in range(100)]  # int calcul[100];
+
+# Power function
+def power(a, b):
+    if b == 0:
+        return 1
+    if b == 1:
+        return a
+    tmp = power(a, b//2)
+    if b % 2 == 0:
+        return tmp * tmp
+    else:
+        return tmp * tmp * a
+
+# Encryption
+def encrypt(M, e, n):
+    C = 1
+    #i = 0
+    for i in range(e):
+    #while i < e:
+        C = C * M % n
+    #    i += 1
+    C = C % n
+
+    # Make M printable.
+    if M < 32:
+        M = 32
+    return C
+
+# Decryption for time attack
+def decrypt(C, d_lg, n, binary_key):
+    # for modular exponentiation
+    s = []
+    R = []
+
+    data_list = []
+
+    s.append(1)
+    for i in range(d_lg):
+        # *********** Time Calculation ****************
+        start = time.perf_counter()
+
+        repeat_count = 1000
+        random_num = rand()
+        for j in range(repeat_count):
+            if binary_key[d_lg-1-i] == 1:
+                if random_num < 2147483647/2:
+                    Ri = s[i]
+                else:
+                    for k in range(11):
+                        pass
+                Ri = s[i] * C % n
+            else:
+                if random_num < 2147483647/2:
+                    Ri = s[i] * C % n
+                else:
+                    for k in range(11):
+                        pass
+                Ri = s[i]
+
+        # *********** Time Calculation ****************
+        end = time.perf_counter()
+
+        R.append(Ri)
+
+        tm = (end - start) * 1000000000 // repeat_count  # nanoseconds
+        # Display Time
+        # print("Iteration time %d: %d nsec" % (i, tm))
+        
+        s.append((Ri * Ri) % n)
+        data_list.append( (tm, i) )
+
+    data_list.sort(key = lambda x: x[0])
+
+    time_ = 0
+    time_difference = 0
+
+    # calculation of the largest gap and corresponding indices
+    j = 0
+    for d in data_list:
+        # assumption: there are at least around 30% zeros and ones
+        if (j >= (d_lg/3)-1 and j <= d_lg-(d_lg/3) and
+           j+1 < len(data_list) and (data_list[j+1][0] - d[0]) > time_):
+            time_ = data_list[j+1][0] - d[0]
+            index_time = j
+        elif j+1 < len(data_list) and (data_list[j+1][0] - d[0]) > time_:
+            time_difference = data_list[j+1][0] - d[0]
+            ind_ecart_bis = j
+        j += 1
+
+    # If difference is 0
+    if time_ == 0:
+        time_ = time_difference
+        index_time = ind_ecart_bis
+
+    # Print Key
+    binary_key_estimate = [0 for i in range(100)]  # int estimated_key[100];
+
+    # Assignment of zeros
+    for j in range(index_time+1):
+        d = data_list[j]
+        binary_key_estimate[d[1]] = 0
+        # If binary_key is invalid
+        if d[1] == 0:
+            binary_key_estimate[d[1]] = 1
+            calcul[d[1]] += 1
+
+    # attribution of some
+    for i in range(index_time+1, len(data_list)):
+        d = data_list[i]
+        binary_key_estimate[d[1]] = 1
+        calcul[d[1]] += 1
+
+    print("Estimated Key: ", end="")
+    for j in range(1, d_lg):
+        print(binary_key_estimate[j], end=" ")
+
+    M = R[d_lg - 1]
+    print("\nDecrypted character: %c" % M)
+
+    #Convert estimated key in binary back to decimal form
+    binary_estimate_decrypted_key = 0
+    for j in range(1, d_lg):
+        binary_estimate_decrypted_key += binary_key_estimate[j] * (2 ** (d_lg - j - 1))
+    print("\nDecrypted Key (Decimal):", binary_estimate_decrypted_key)
+
+#Convert Key to binary
+def convert(d):
+    binary_key = []
+    q = 1
+    i = 0
+    while q != 0:
+        q = d // 2
+        r = d % 2
+        d = q
+        binary_key.append(r)
+        i += 1
+        j = i
+    print("Binary Key: ", end="")
+    i = j-1
+    while i >= 0:
+        print(binary_key[i], end=" ")
+        i -= 1
+    print()
+    return (j, binary_key)
+
+#/* Time Attack function */
+def time_attack():
+    while True:
+            p = int(input('Enter a prime number p: '))
+            if p > 1:
+                # Iterate from 2 to p // 2
+                for i in range(2, (p // 2) + 1):
+                    # If p is divisible by any number between 2 and n / 2, it is not prime
+                    if (p % i) == 0:
+                        print(p, "is not a prime number")
+                        break
+                else:
+                    print(p, "is a prime number")
+                    break  # Break out of the while loop if it's prime
+            else:
+                print(p, "is not a prime number. Please enter a number greater than 1.")
+
+    while True:
+        q = int(input('Enter a prime number q: '))
+        if q > 1:
+            # Iterate from 2 to q // 2
+            for i in range(2, (q // 2) + 1):
+                # If q is divisible by any number between 2 and n / 2, it is not prime
+                if (q % i) == 0:
+                    print(q, "is not a prime number")
+                    break
+            else:
+                print(q, "is a prime number")
+                break  # Break out of the while loop if it's prime
+        else:
+            print(q, "is not a prime number. Please enter a number greater than 1.")
+
+    # Step 2 Compute the value of n
+    n = p * q
+    print("n =", n)
+
+    # Step 3 Compute the value of phi(n)
+    phi = (p - 1) * (q - 1)
+    print("phi =", phi)
+
+    # Step 4 Choose a value of e such that 1<e<phi(n) and gcd(phi(n), e) = 1
+    e = (int(input('Enter a prime number e: ')))
+    while e < phi:
+        if math.gcd(e, phi) == 1:
+            break
+        else:
+            e += 1
+    print("e =", e)
+
+    # Step 5 Calculate d such that d = (e^-1) mod phi(n)
+    for k in range(-1, -1000, -1):
+        temp = -(k * phi) + 1
+        d = temp // e
+        rem = temp % e
+
+        if rem == 0:
+            print('k =', k)
+            print('d =', d)
+            break
+    else:
+       print("none")
+
+    # Print Public Key
+    print(f'Public key: {e, n}')
+    # Print Private Key
+    print(f'Private key: {d, n}')
+
+    binary_key = []  #[100];
+
+    # Input and Display Plain text
+    while True:
+        try:
+            msg = int(input('Enter a message: '))
+            print(f'The original message is: {msg}')
+            break
+        except ValueError:
+            print('Invalid input. Please enter an integer.')
+
+    # Convert to String so encryption occur
+    pt = str(msg)
+    code = [encrypt(ord(m), e, n) for m in pt]
+    encrypted = code
+    print("Encrypted Meassage: ", encrypted[0])
+
+    # Convert the key to binary
+    print("\nConverting d to binary form")
+    d_lg, binary_key = convert(d)
+    print("\n")
+    for c in code:
+        decrypt(c, d_lg, n, binary_key)
+    return 0
+
+def main():
+    print("----------------Welcome to the RSA Demo----------------")
+    is_quit = False
+    while is_quit == False:
+        # Print out the three options 
+        print("Enter the number on the left side for operation")
+        print("1.......Implement a text-book RSA encryption with small modulus and left-to-right square-and-multiply algorithm") 
+        print("2.......Implement a timing side-channel attack mechanism")
+        print("3.......Exit")
+
+        while is_quit == False:
+            # Ask the user enter the choice again unitl the input contains only digits
+                choice = input("Enter your choice: ")
+            # Convert the input choice into integer
+                if choice.isnumeric():
+                    choice = int(choice)
+                #Call the corresponding function based on the input choice 
+                    if  choice == 1:
+                        textbookRSA()                        
+                    elif choice == 2:
+                        time_attack()
+                    elif choice == 3:
+                        is_quit = True
+                else:
+                    print("Invalid Choice entered")     
+
+if __name__ == "__main__":
+    main()     
