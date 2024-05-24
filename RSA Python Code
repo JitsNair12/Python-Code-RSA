@@ -59,7 +59,6 @@ def textbookRSA():
         print("phi =", phi)
 
         # Step 4 Choose a value of e such that 1<e<phi(n) and gcd(phi(n), e) = 1
-
         e = (int(input('Enter a prime number e: ')))
         while e < phi:
             if math.gcd(e, phi) == 1:
@@ -185,6 +184,7 @@ def decrypt(C, d_lg, n, binary_key):
     time_difference = 0
 
     # calculation of the largest gap and corresponding indices
+    #Assume the largest time difference is the private key
     j = 0
     for d in data_list:
         # assumption: there are at least around 30% zeros and ones
@@ -194,15 +194,15 @@ def decrypt(C, d_lg, n, binary_key):
             index_time = j
         elif j+1 < len(data_list) and (data_list[j+1][0] - d[0]) > time_:
             time_difference = data_list[j+1][0] - d[0]
-            ind_ecart_bis = j
+            index_time_difference = j
         j += 1
 
     # If difference is 0
     if time_ == 0:
         time_ = time_difference
-        index_time = ind_ecart_bis
+        index_time = index_time_difference
 
-    # Print Key
+    # Estimated key in binary form 
     binary_key_estimate = [0 for i in range(100)]  # int estimated_key[100];
 
     # Assignment of zeros
@@ -214,26 +214,28 @@ def decrypt(C, d_lg, n, binary_key):
             binary_key_estimate[d[1]] = 1
             calcul[d[1]] += 1
 
-    # attribution of some
+    # Attribution of some
     for i in range(index_time+1, len(data_list)):
         d = data_list[i]
         binary_key_estimate[d[1]] = 1
         calcul[d[1]] += 1
 
+    #Print out estimated key in binary form 
     print("Estimated Key: ", end="")
     for j in range(1, d_lg):
         print(binary_key_estimate[j], end=" ")
 
+    #Print out Decrypted Message using the Estimated Key 
     M = R[d_lg - 1]
-    print("\nDecrypted character: %c" % M)
+    print("\nDecrypted Message: %c" % M)
 
-    #Convert estimated key in binary back to decimal form
+    #Convert estimated private key from binary back to decimal form
     binary_estimate_decrypted_key = 0
     for j in range(1, d_lg):
         binary_estimate_decrypted_key += binary_key_estimate[j] * (2 ** (d_lg - j - 1))
     print("\nDecrypted Key (Decimal):", binary_estimate_decrypted_key)
 
-#Convert Key to binary
+#Function to Convert decimal to binary form
 def convert(d):
     binary_key = []
     q = 1
@@ -335,12 +337,14 @@ def time_attack():
     pt = str(msg)
     code = [encrypt(ord(m), e, n) for m in pt]
     encrypted = code
-    print("Encrypted Meassage: ", encrypted[0])
+    print("Encrypted Message: ", encrypted[0])
 
-    # Convert the key to binary
-    print("\nConverting d to binary form")
+    # Convert the public key to binary
+    print("\nConverting public key to binary form")
     d_lg, binary_key = convert(d)
-    print("\n")
+
+    #Estimate the private key based on time 
+    print("\nEstimating the private key in binary from a time attack")
     for c in code:
         decrypt(c, d_lg, n, binary_key)
     return 0
@@ -351,7 +355,7 @@ def main():
     while is_quit == False:
         # Print out the three options 
         print("Enter the number on the left side for operation")
-        print("1.......Implement a text-book RSA encryption with small modulus and left-to-right square-and-multiply algorithm") 
+        print("1.......Implement a text-book RSA encryption with small modulus and left-to-right square-and-multiply algorithm")
         print("2.......Implement a timing side-channel attack mechanism")
         print("3.......Exit")
 
